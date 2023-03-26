@@ -1,0 +1,43 @@
+{
+    "folders": [
+        {
+            "name": "demo",
+            "path": "../packages/demo"
+        },
+        {
+            "name": "react",
+            "path": "../packages/react"
+        },
+        {
+            "name": "ROOT",
+            "path": ".."
+        }
+    ],
+    "extensions": {
+        "recommendations": [
+            "arcanis.vscode-zipfs"
+        ]
+    },
+    "settings": {
+        "search.exclude": {
+            "**/.yarn": true,
+            "**/.pnp.*": true
+        },
+        "typescript.tsdk": "../../.yarn/sdks/typescript/lib",
+        "typescript.enablePromptUseWorkspaceTsdk": true,
+        "files.exclude": {
+            "**/.git": true,
+            "**/.svn": true,
+            "**/.hg": true,
+            "**/CVS": true,
+            "**/.DS_Store": true,
+            "**/Thumbs.db": true,
+            ".pnp.cjs": true,
+            ".pnp.loader.mjs": true,
+            "yarn.lock": true,
+            ".yarn": true,
+            "dist": false,
+            "packages": true
+        }
+    }
+}

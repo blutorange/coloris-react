@@ -1,0 +1,518 @@
+diff --git a/dist/coloris.d.ts b/dist/coloris.d.ts
+index 8ee85fb5ca89d7f6fd637cdedc0b1f03f57ef8f5..66f94ce03f4825e05268fdc8ddcef87e85499d4f 100644
+--- a/dist/coloris.d.ts
++++ b/dist/coloris.d.ts
+@@ -3,8 +3,13 @@
+  */
+ declare function Coloris(opts: Coloris.ColorisOptions): void;
+ 
+-declare namespace Coloris {
++declare global {
++  interface GlobalEventHandlersEventMap {
++      "coloris:pick": CustomEvent<Coloris.PickEventData>;
++  }
++}
+ 
++declare namespace Coloris {
+   /**
+    * All color themes supported by the color picker. More themes might be added
+    * in the future.
+@@ -40,6 +45,14 @@ declare namespace Coloris {
+     | "auto"
+     | "mixed";
+ 
++  /**
++   * A function that is called whenever a new color is picked.
++   * 
++   * @param color The newly selected color, as a CSS color string.
++   * @since 0.18.0
++   */
++  type OnChangeCallback = (color: string) => void;
++
+   interface Accessibility {
+     /**
+      * @default "Open color picker"
+@@ -51,6 +64,11 @@ declare namespace Coloris {
+      */
+     close: string;
+ 
++    /**
++     * @default "Clear the selected color"
++     */
++    clear: string;
++
+     /**
+      * @default "Saturation: {s}. Brightness: {v}."
+      */
+@@ -89,6 +107,7 @@ declare namespace Coloris {
+ 
+   /**
+   * Configuration for the optional clear button on the color picker.
++  * @deprecated Use the `clearLabel` setting to specify the label.
+   */
+   interface ClearButtonOptions {
+     /**
+@@ -104,6 +123,7 @@ declare namespace Coloris {
+ 
+   /**
+   * Configuration for the optional close button on the color picker.
++  * @deprecated Use the `closeLabel` setting to specify the label.
+   */
+   interface CloseButtonOptions {
+     /**
+@@ -117,13 +137,18 @@ declare namespace Coloris {
+     label: string;
+   }
+ 
+-  interface ColorisOptions {
++  interface PickEventData {
+     /**
+-     * A custom CSS selector to bind the color picker to. This must point to
+-     * one or more {@link HTMLInputElement}s.
++     * The newly selected color which was picked.
+      */
+-    el: string;
++    color: string; 
++  }
+ 
++  /**
++   * Settings that can be configured for each color picker instance separately.
++   * @since 0.15.0
++   */
++  interface ColorisVirtualInstanceOptions { 
+     /**
+      * CSS selector for the parent.
+      *
+@@ -136,28 +161,7 @@ declare namespace Coloris {
+      * @default null
+      */
+     parent?: null | string;
+-
+-    /**
+-     * The bound input fields are wrapped in a div that adds a thumbnail
+-     * showing the current color and a button to open the color picker (for
+-     * accessibility only).
+-     *
+-     * If you wish to keep your fields unaltered, set this to `false`, in which
+-     * case you will lose the color thumbnail and the accessible button (not
+-     * recommended).
+-     *
+-     * @default true
+-     */
+-    wrap?: boolean;
+-    
+-    // Set to true to activate basic right-to-left support.
+-    /**
+-     * Set to true to activate basic right-to-left support.
+-     *
+-     * @default false
+-     */
+-    rtl?: boolean;
+-
++      
+     /**
+      * The color theme to use for the color picker. More themes might be added
+      * in the future. Available themes: default, large, polaroid.
+@@ -165,7 +169,7 @@ declare namespace Coloris {
+      * @default "default"
+      */
+     theme?: Theme;
+-
++  
+     /**
+      * Set the theme to light or dark mode:
+      *  - light: light mode.
+@@ -175,7 +179,7 @@ declare namespace Coloris {
+      * @default "light"
+      */
+     themeMode?: ThemeMode,
+-
++  
+     /**
+      * The margin in pixels between the input fields and the color picker's
+      * dialog.
+@@ -183,7 +187,7 @@ declare namespace Coloris {
+      * @default 2
+      */
+     margin?: number;
+-
++  
+     /**
+      * Sets the preferred color string format. The format affects which value is
+      * shown in the input field. See {@link ColorFormat} for more details.
+@@ -191,7 +195,7 @@ declare namespace Coloris {
+      * @default "hex"
+      */
+     format?: ColorFormat;
+-
++  
+     /**
+      * Set to true to enable format toggle buttons in the color picker dialog.
+      *
+@@ -200,28 +204,28 @@ declare namespace Coloris {
+      * @default true
+      */
+     formatToggle?: boolean;
+-
++  
+     /**
+      * Focus the color value input when the color picker dialog is opened.
+      *
+      * @default true
+      */
+     focusInput?: boolean;
+-
++  
+     /**
+      * Select and focus the color value input when the color picker dialog is opened.
+      *
+      * @default false
+      */
+     selectInput?: boolean;
+-
++  
+     /**
+      * Set to true to hide all the color picker widgets (spectrum, hue, ...) except the swatches.
+      *
+      * @default false
+      */
+     swatchesOnly?: boolean;
+-
++  
+     /**
+      * Enable or disable alpha support.
+      *
+@@ -231,30 +235,49 @@ declare namespace Coloris {
+      * @default true
+      */
+     alpha?: boolean;
+-
++  
+     /**
+      * Set to true to always include the alpha value in the color value even if the opacity is 100%.
+      *
+      * @default false
+      */
+     forceAlpha?: boolean,
+-
++  
+     /**
+-     * Shows a clear button and set its label. By default, no clear button is
+-     * shown.
++     * Whether to show an optional clear button. Use `clearLabel` to set the label.
++     * 
++     * Note that this should be a boolean, a `ClearButtonOptions` object is still
++     * supported for backwards compatibility, but it is deprecated.
+      *
+-     * @default undefined
++     * @default false
+      */
+-    clearButton?: ClearButtonOptions;
+-
++    clearButton?: boolean | ClearButtonOptions;
++  
++    /**
++     * Set the label of the clear button.
++     * @default Clear
++     * @since 0.17.0
++     */
++    clearLabel?: string,
++  
+     /**
+-     * Shows a close button and set its label. By default, no close button is
+-     * shown.
++     * Whether to show an optional close button. Use `closeLabel` to set the label.
++     * 
++     * Note that this should be a boolean, a `CloseButtonOptions` object is still
++     * supported for backwards compatibility, but it is deprecated.
+      *
+-     * @default undefined
++     * @default false
+      */
+-    closeButton?: CloseButtonOptions;
+-
++    closeButton?: boolean | CloseButtonOptions;
++  
++    /**
++     * Set the label of the close button.
++     * 
++     * @default Close
++     * @since 0.17.0
++     */
++    closeLabel?: string;
++  
+     /**
+      * An array of the desired color swatches to display. If omitted or the
+      * array is empty, the color swatches will be disabled.
+@@ -262,26 +285,68 @@ declare namespace Coloris {
+      * @default []
+      */
+     swatches?: string[];
++    
++    /**
++     * A function that is called whenever a new color is picked.
++     * @since 0.18.0
++     */
++    onChange?: OnChangeCallback;
++  }
+ 
++  interface ColorisOptions extends ColorisVirtualInstanceOptions {
+     /**
+      * Accessibility messages for various aria attribute etc.
+      */
+     a11y?: Accessibility;
++    
++    /**
++     * In inline mode, this is the default color that is set when the picker is initialized.
++     */
++    defaultColor?: string;
+ 
+     /**
+-     * Set to true to use the color picker as an inline widget. In this mode the color picker is
++     * A custom CSS selector to bind the color picker to. This must point to
++     * one or more {@link HTMLInputElement}s.
++     */
++    el: string;
++  
++    /**
++     * Set to `true` to use the color picker as an inline widget. In this mode the color picker is
+      * always visible and positioned statically within its container, which is by default the body
+      * of the document. Use the "parent" option to set a custom container.
+-     * Note: In this mode, the best way to get the picked color, is listening to the "coloris:pick"
+-     * event and reading the value from the event detail (See example in the Events section). The
+-     * other way is to read the value of the input field with the id "clr-color-value".
++     * 
++     * Note: In this mode, the best way to get the picked color is by listening to the `coloris:pick`
++     * event and reading the value from the event detail (see the example below). The other way is
++     * to read the value of the input field with the ID `clr-color-value`.
++     * 
++     * @example
++     * ```js
++     * document.addEventListener("coloris:pick", event => {
++     *   console.log("New color", event.detail.color);
++     * });
++     * ```
+      */
+     inline?: boolean;
+ 
+     /**
+-     * In inline mode, this is the default color that is set when the picker is initialized.
++     * Set to true to activate basic right-to-left support.
++     *
++     * @default false
+      */
+-    defaultColor?: string;
++    rtl?: boolean;
++
++    /**
++     * The bound input fields are wrapped in a div that adds a thumbnail
++     * showing the current color and a button to open the color picker (for
++     * accessibility only).
++     *
++     * If you wish to keep your fields unaltered, set this to `false`, in which
++     * case you will lose the color thumbnail and the accessible button (not
++     * recommended).
++     *
++     * @default true
++     */
++    wrap?: boolean;
+   }
+ 
+   /**
+@@ -297,11 +362,96 @@ declare namespace Coloris {
+    */
+   function close(revert?: boolean): void;
+ 
++  /**
++   * Update the color picker's position and the color gradient's offset.
++   */
++  function updatePosition(): void;
++
+   /**
+    * Converts an input field to a color picker input.
+    */
+   function coloris(opts: ColorisOptions): void;
+ 
++  /**
++   * Adds a virtual instance with separate options.
++   * 
++   * Although there is only one physical instance of the color picker in the document, it is possible
++   * to simulate multiple instances, each with its own appearance and behavior, by updating the
++   * configuration at runtime, when the color picker is opened.
++   * 
++   * Here is an example of how to do it by manually setting configuration options in response to click events:
++   * 
++   * ```js
++   * // Regular color fields use the default light theme
++   * document.querySelectorAll('.color-fields').forEach(input => {
++   *   input.addEventListener('click', e => {
++   *     Coloris({
++   *       theme: 'default',
++   *       themeMode: 'light',
++   *     });
++   *   });
++   * });
++   * 
++   * // But the special color fields use the polaroid dark theme
++   * document.querySelectorAll('.special-color-fields').forEach(input => {
++   *   input.addEventListener('click', e => {
++   *     Coloris({
++   *       theme: 'polaroid',
++   *       themeMode: 'dark',
++   *     });
++   *   });
++   * });
++   * ```
++   * 
++   * This works well and is quite versatile, but it can get a little hard to keep track of each
++   * change every "instance" makes and revert them to the default values.
++   * 
++   * So as of version 0.15.0, there is a new way to automatically manage virtual instances. This works
++   * by assigning configuration overrides to a CSS selector representing one or more color fields.
++   * 
++   * @example
++   * ```js
++   * // Color fields that have the class "instance1" have a format toggle,
++   *  // no alpha slider, a dark theme and custom swatches
++   *  Coloris.setInstance('.instance1', {
++   *    theme: 'polaroid',
++   *    themeMode: 'dark',
++   *    alpha: false,
++   *    formatToggle: true,
++   *    swatches: [
++   *      '#264653',
++   *      '#2a9d8f',
++   *      '#e9c46a'
++   *    ]
++   *  });
++   * 
++   *  // Fields matching the class "instance2" show color swatches only
++   *  Coloris.setInstance('.instance2', {
++   *    swatchesOnly: true,
++   *    swatches: [
++   *      '#264653',
++   *      '#2a9d8f',
++   *      '#e9c46a'
++   *    ]
++   *  });
++   * ```
++   * @param selector CSS selector for the input fields to which the options should apply.
++   * @param opts Options to apply to all color picker input fields matching the given selector.
++   * @since 0.15.0
++   */
++  function setInstance(selector: string, opts: Partial<ColorisVirtualInstanceOptions>): void;
++
++  function setColor(color: string | undefined, element: HTMLElement): void;
++
++  /**
++   * Removes a virtual instance that was added by {@link setInstance}. Note that
++   * to remove an instance, the selector must be exactly equal to what was passed
++   * to `setInstance`, it cannot merely be a different selector that happens to
++   * match the same elements. 
++   * @param selector CSS selector to remove from the set of virtual instances.
++   */
++  function removeInstance(selector: string): void;
++
+   /**
+    * Initializes the Coloris color picker and binds the color picker to all
+    * input fields with the `data-coloris` attribute.
+@@ -324,4 +474,3 @@ export as namespace Coloris;
+  * methods.
+  */
+ export = Coloris;
+-
+diff --git a/dist/esm/coloris.js b/dist/esm/coloris.js
+index e1dbd651d5ac61234764ddee30da8b612ca80f69..5d1408223d8842a7f46fb731186356e7b0e296b0 100644
+--- a/dist/esm/coloris.js
++++ b/dist/esm/coloris.js
+@@ -1138,6 +1138,36 @@ var Coloris = function () {
+       NodeList.prototype.forEach = Array.prototype.forEach;
+     }
+ 
++  //*****************************************************
++  //******* NPM: Custom code starts here ****************
++  //*****************************************************
++  
++  /**
++   * Copy the active color to the linked input field and set the color.
++   * @param {string} [color] Color value to override the active color.
++   * @param {HTMLelement} [target] the element setting the color on
++   */
++  function setColor(color, target) {
++    currentEl = target;
++    oldColor = currentEl.value;
++    attachVirtualInstance(target);
++    if (color !== undefined) {
++      currentFormat = getColorFormatFromStr(color);
++      updatePickerPosition();
++      setColorFromStr(color);
++      pickColor();
++      if (oldColor !== color) {
++        currentEl.dispatchEvent(new Event('change', { bubbles: true }));
++      }
++     }
++    else {
++      pickColor('');
++      if (oldColor !== undefined && oldColor !== "") {
++        currentEl.dispatchEvent(new Event('change', { bubbles: true }));
++      }
++    }
++  }
++
+     // Expose the color picker to the global scope
+     var Coloris = function () {
+       var methods = {
+@@ -1145,6 +1175,7 @@ var Coloris = function () {
+         set: configure,
+         wrap: wrapFields,
+         close: closePicker,
++        setColor: setColor,
+         setInstance: setVirtualInstance,
+         removeInstance: removeVirtualInstance,
+         updatePosition: updatePickerPosition
+@@ -1186,10 +1217,18 @@ var _init = Coloris.init;
+ var _set = Coloris.set;
+ var _wrap = Coloris.wrap;
+ var _close = Coloris.close;
++var _setColor = Coloris.setColor;
++var _setInstance = Coloris.setInstance;
++var _removeInstance = Coloris.removeInstance;
++var _updatePosition = Coloris.updatePosition;
+ export default Coloris;
+ export {
+ _coloris as coloris,
+ _close as close,
+ _init as init,
+ _set as set,
++_setColor as setColor,
++_setInstance as setInstance,
++_removeInstance as removeInstance,
++_updatePosition as updatePosition,
+ _wrap as wrap };
+\ No newline at end of file
+diff --git a/dist/esm/coloris.min.js b/dist/esm/coloris.min.js
+index 246bcdc492a47cd179b6d100cc6881c06a624c9a..469f42a5cb5371b97ac6b8ad4bf21d8cebd0cd7c 100644
+--- a/dist/esm/coloris.min.js
++++ b/dist/esm/coloris.min.js
+@@ -6,4 +6,4 @@ var Coloris=function(){
+   * Version: 0.18.0
+   * NPM: https://github.com/melloware/coloris-npm
+   */
+-return h=window,b=document,v=Math,c=b.createElement("canvas").getContext("2d"),O={el:"[data-coloris]",parent:"body",theme:"default",themeMode:"light",rtl:!(H={r:0,g:0,b:0,h:0,s:0,v:0,a:1}),wrap:!0,margin:2,format:"hex",formatToggle:!1,swatches:[],swatchesOnly:!1,alpha:!0,forceAlpha:!1,focusInput:!0,selectInput:!1,inline:!1,defaultColor:"#000000",clearButton:!1,clearLabel:"Clear",closeButton:!1,closeLabel:"Close",onChange:function(){},a11y:{open:"Open color picker",close:"Close color picker",clear:"Clear the selected color",marker:"Saturation: {s}. Brightness: {v}.",hueSlider:"Hue slider",alphaSlider:"Opacity slider",input:"Color value field",format:"Color format",swatch:"Color swatch",instruction:"Saturation and brightness selector. Use up, down, left and right arrow keys to select."}},I={},N="",D=!(_={}),void 0!==NodeList&&NodeList.prototype&&!NodeList.prototype.forEach&&(NodeList.prototype.forEach=Array.prototype.forEach),(J=function(){var r={init:G,set:o,wrap:s,close:a,setInstance:j,removeInstance:F,updatePosition:i};function e(e){$(function(){e&&("string"==typeof e?W:o)(e)})}for(var t in r)!function(a){e[a]=function(){for(var e=arguments.length,t=new Array(e),l=0;l<e;l++)t[l]=arguments[l];$(r[a],t)}}(t);return e}()).coloris=J;function o(n){if("object"==typeof n)for(var c in n)!function(){switch(c){case"el":W(n.el),!1!==n.wrap&&s(n.el);break;case"parent":(y=b.querySelector(n.parent))&&(y.appendChild(g),O.parent=n.parent,y===b.body)&&(y=null);break;case"themeMode":O.themeMode=n.themeMode,"auto"===n.themeMode&&h.matchMedia&&h.matchMedia("(prefers-color-scheme: dark)").matches&&(O.themeMode="dark");case"theme":n.theme&&(O.theme=n.theme),g.className="clr-picker clr-"+O.theme+" clr-"+O.themeMode,O.inline&&i();break;case"rtl":O.rtl=!!n.rtl,b.querySelectorAll(".clr-field").forEach(function(e){return e.classList.toggle("clr-rtl",O.rtl)});break;case"margin":n.margin*=1,O.margin=(isNaN(n.margin)?O:n).margin;break;case"wrap":n.el&&n.wrap&&s(n.el);break;case"formatToggle":O.formatToggle=!!n.formatToggle,f("clr-format").style.display=O.formatToggle?"block":"none",O.formatToggle&&(O.format="auto");break;case"swatches":var l;Array.isArray(n.swatches)&&(l=[],n.swatches.forEach(function(e,t){l.push('<button type="button" id="clr-swatch-'+t+'" aria-labelledby="clr-swatch-label clr-swatch-'+t+'" style="color: '+e+';">'+e+"</button>")}),f("clr-swatches").innerHTML=l.length?"<div>"+l.join("")+"</div>":"",O.swatches=n.swatches.slice());break;case"swatchesOnly":O.swatchesOnly=!!n.swatchesOnly,g.setAttribute("data-minimal",O.swatchesOnly);break;case"alpha":O.alpha=!!n.alpha,g.setAttribute("data-alpha",O.alpha);break;case"inline":O.inline=!!n.inline,g.setAttribute("data-inline",O.inline),O.inline&&(e=n.defaultColor||O.defaultColor,M=q(e),i(),u(e));break;case"clearButton":"object"==typeof n.clearButton&&(n.clearButton.label&&(O.clearLabel=n.clearButton.label,x.innerHTML=O.clearLabel),n.clearButton=n.clearButton.show),O.clearButton=!!n.clearButton,x.style.display=O.clearButton?"block":"none";break;case"clearLabel":O.clearLabel=n.clearLabel,x.innerHTML=O.clearLabel;break;case"closeButton":O.closeButton=!!n.closeButton,O.closeButton?g.insertBefore(C,L):L.appendChild(C);break;case"closeLabel":O.closeLabel=n.closeLabel,C.innerHTML=O.closeLabel;break;case"a11y":var e,t,a=n.a11y,r=!1;if("object"==typeof a)for(var o in a)a[o]&&O.a11y[o]&&(O.a11y[o]=a[o],r=!0);r&&(e=f("clr-open-label"),t=f("clr-swatch-label"),e.innerHTML=O.a11y.open,t.innerHTML=O.a11y.swatch,C.setAttribute("aria-label",O.a11y.close),x.setAttribute("aria-label",O.a11y.clear),A.setAttribute("aria-label",O.a11y.hueSlider),S.setAttribute("aria-label",O.a11y.alphaSlider),E.setAttribute("aria-label",O.a11y.input),m.setAttribute("aria-label",O.a11y.instruction));break;default:O[c]=n[c]}}()}function j(e,t){"string"==typeof e&&"object"==typeof t&&(I[e]=t,D=!0)}function F(e){delete I[e],0===Object.keys(I).length&&(D=!1,e===N)&&l()}function R(l){if(D){var a,r=["el","wrap","rtl","inline","defaultColor","a11y"];for(a in I)if("break"===function(){var t=I[a];if(l.matches(a)){for(var e in N=a,_={},r.forEach(function(e){return delete t[e]}),t)_[e]=Array.isArray(O[e])?O[e].slice():O[e];return o(t),"break"}}())break}}function l(){0<Object.keys(_).length&&(o(_),N="",_={})}function W(e){r(b,"click",e,function(e){O.inline||(R(e.target),B=e.target,n=B.value,M=q(n),g.classList.add("clr-open"),i(),u(n),(O.focusInput||O.selectInput)&&E.focus({preventScroll:!0}),O.selectInput&&E.select(),B.dispatchEvent(new Event("open",{bubbles:!0})))}),r(b,"input",e,function(e){var t=e.target.parentNode;t.classList.contains("clr-field")&&(t.style.color=e.target.value)})}function i(){var e,t,l,a,r=y,o=h.scrollY,n=g.offsetWidth,c=g.offsetHeight,i={left:!1,top:!1},s={x:0,y:0};r&&(t=h.getComputedStyle(r),e=parseFloat(t.marginTop),t=parseFloat(t.borderTopWidth),(s=r.getBoundingClientRect()).y+=t+o),O.inline||(l=(t=B.getBoundingClientRect()).x,a=o+t.y+t.height+O.margin,r?(l-=s.x,a-=s.y,l+n>r.clientWidth&&(l+=t.width-n,i.left=!0),a+c>r.clientHeight-e&&c+O.margin<=t.top-(s.y-o)&&(a-=t.height+c+2*O.margin,i.top=!0),a+=r.scrollTop):(l+n>b.documentElement.clientWidth&&(l+=t.width-n,i.left=!0),a+c-o>b.documentElement.clientHeight&&c+O.margin<=t.top&&(a=o+t.y-c-O.margin,i.top=!0)),g.classList.toggle("clr-left",i.left),g.classList.toggle("clr-top",i.top),g.style.left=l+"px",g.style.top=a+"px",s.x+=g.offsetLeft,s.y+=g.offsetTop),w={width:m.offsetWidth,height:m.offsetHeight,x:m.offsetLeft+s.x,y:m.offsetTop+s.y}}function s(e){b.querySelectorAll(e).forEach(function(e){var t,l,a=e.parentNode;a.classList.contains("clr-field")||(t=b.createElement("div"),l="clr-field",(O.rtl||e.classList.contains("clr-rtl"))&&(l+=" clr-rtl"),t.innerHTML='<button type="button" aria-labelledby="clr-open-label"></button>',a.insertBefore(t,e),t.setAttribute("class",l),t.style.color=e.value,t.appendChild(e))})}function a(e){var t;B&&!O.inline&&(t=B,e&&(B=null,n!==t.value)&&(t.value=n,t.dispatchEvent(new Event("input",{bubbles:!0}))),setTimeout(function(){n!==t.value&&t.dispatchEvent(new Event("change",{bubbles:!0}))}),g.classList.remove("clr-open"),D&&l(),t.dispatchEvent(new Event("close",{bubbles:!0})),O.focusInput&&t.focus({preventScroll:!0}),B=null)}function u(e){var e=function(e){var t;c.fillStyle="#000",c.fillStyle=e,(e=/^((rgba)|rgb)[\D]+([\d.]+)[\D]+([\d.]+)[\D]+([\d.]+)[\D]*?([\d.]+|$)/i.exec(c.fillStyle))?(t={r:+e[3],g:+e[4],b:+e[5],a:+e[6]}).a=+t.a.toFixed(2):(e=c.fillStyle.replace("#","").match(/.{2}/g).map(function(e){return parseInt(e,16)}),t={r:e[0],g:e[1],b:e[2],a:1});return t}(e),t=function(e){var t=e.r/255,l=e.g/255,a=e.b/255,r=v.max(t,l,a),o=v.min(t,l,a),o=r-o,n=r,c=0,i=0;o&&(r===t&&(c=(l-a)/o),r===l&&(c=2+(a-t)/o),r===a&&(c=4+(t-l)/o),r)&&(i=o/r);return{h:(c=v.floor(60*c))<0?c+360:c,s:v.round(100*i),v:v.round(100*n),a:e.a}}(e);P(t.s,t.v),p(e,t),A.value=t.h,g.style.color="hsl("+t.h+", 100%, 50%)",z.style.left=t.h/360*100+"%",k.style.left=w.width*t.s/100+"px",k.style.top=w.height-w.height*t.v/100+"px",S.value=100*t.a,T.style.left=100*t.a+"%"}function q(e){e=e.substring(0,3).toLowerCase();return"rgb"===e||"hsl"===e?e:"hex"}function d(e){e=void 0!==e?e:E.value,B&&(B.value=e,B.dispatchEvent(new Event("input",{bubbles:!0}))),O.onChange&&O.onChange.call(h,e),b.dispatchEvent(new CustomEvent("coloris:pick",{detail:{color:e}}))}function Y(e,t){var l,a,r,o,n,e={h:+A.value,s:e/w.width*100,v:100-t/w.height*100,a:S.value/100},c=(c=(t=e).s/100,l=t.v/100,c*=l,a=t.h/60,r=c*(1-v.abs(a%2-1)),c+=l-=c,r+=l,a=v.floor(a)%6,o=[c,r,l,l,r,c][a],n=[r,c,c,r,l,l][a],l=[l,l,r,c,c,r][a],{r:v.round(255*o),g:v.round(255*n),b:v.round(255*l),a:t.a});P(e.s,e.v),p(c,e),d()}function P(e,t){var l=O.a11y.marker;e=+e.toFixed(1),t=+t.toFixed(1),l=(l=l.replace("{s}",e)).replace("{v}",t),k.setAttribute("aria-label",l)}function t(e){var t={pageX:((t=e).changedTouches?t.changedTouches[0]:t).pageX,pageY:(t.changedTouches?t.changedTouches[0]:t).pageY},l=t.pageX-w.x,t=t.pageY-w.y;y&&(t+=y.scrollTop),U(l,t),e.preventDefault(),e.stopPropagation()}function U(e,t){e=e<0?0:e>w.width?w.width:e,t=t<0?0:t>w.height?w.height:t,k.style.left=e+"px",k.style.top=t+"px",Y(e,t),k.focus()}function p(e,t){void 0===t&&(t={});var l,a,r=O.format;for(l in e=void 0===e?{}:e)H[l]=e[l];for(a in t)H[a]=t[a];var o,n=function(e){var t=e.r.toString(16),l=e.g.toString(16),a=e.b.toString(16),r="";e.r<16&&(t="0"+t);e.g<16&&(l="0"+l);e.b<16&&(a="0"+a);O.alpha&&(e.a<1||O.forceAlpha)&&(e=255*e.a|0,r=e.toString(16),e<16)&&(r="0"+r);return"#"+t+l+a+r}(H),c=n.substring(0,7);switch(k.style.color=c,T.parentNode.style.color=c,T.style.color=n,L.style.color=n,m.style.display="none",m.offsetHeight,m.style.display="",T.nextElementSibling.style.display="none",T.nextElementSibling.offsetHeight,T.nextElementSibling.style.display="","mixed"===r?r=1===H.a?"hex":"rgb":"auto"===r&&(r=M),r){case"hex":E.value=n;break;case"rgb":E.value=(o=H,!O.alpha||1===o.a&&!O.forceAlpha?"rgb("+o.r+", "+o.g+", "+o.b+")":"rgba("+o.r+", "+o.g+", "+o.b+", "+o.a+")");break;case"hsl":E.value=(o=function(e){var t,l=e.v/100,a=l*(1-e.s/100/2);0<a&&a<1&&(t=v.round((l-a)/v.min(a,1-a)*100));return{h:e.h,s:t||0,l:v.round(100*a),a:e.a}}(H),!O.alpha||1===o.a&&!O.forceAlpha?"hsl("+o.h+", "+o.s+"%, "+o.l+"%)":"hsla("+o.h+", "+o.s+"%, "+o.l+"%, "+o.a+")")}b.querySelector('.clr-format [value="'+r+'"]').checked=!0}function e(){var e=+A.value,t=+k.style.left.replace("px",""),l=+k.style.top.replace("px","");g.style.color="hsl("+e+", 100%, 50%)",z.style.left=e/360*100+"%",Y(t,l)}function X(){var e=S.value/100;T.style.left=100*e+"%",p({a:e}),d()}function G(){b.getElementById("clr-picker")||(y=null,(g=b.createElement("div")).setAttribute("id","clr-picker"),g.className="clr-picker",g.innerHTML='<input id="clr-color-value" name="clr-color-value" class="clr-color" type="text" value="" spellcheck="false" aria-label="'+O.a11y.input+'"><div id="clr-color-area" class="clr-gradient" role="application" aria-label="'+O.a11y.instruction+'"><div id="clr-color-marker" class="clr-marker" tabindex="0"></div></div><div class="clr-hue"><input id="clr-hue-slider" name="clr-hue-slider" type="range" min="0" max="360" step="1" aria-label="'+O.a11y.hueSlider+'"><div id="clr-hue-marker"></div></div><div class="clr-alpha"><input id="clr-alpha-slider" name="clr-alpha-slider" type="range" min="0" max="100" step="1" aria-label="'+O.a11y.alphaSlider+'"><div id="clr-alpha-marker"></div><span></span></div><div id="clr-format" class="clr-format"><fieldset class="clr-segmented"><legend>'+O.a11y.format+'</legend><input id="clr-f1" type="radio" name="clr-format" value="hex"><label for="clr-f1">Hex</label><input id="clr-f2" type="radio" name="clr-format" value="rgb"><label for="clr-f2">RGB</label><input id="clr-f3" type="radio" name="clr-format" value="hsl"><label for="clr-f3">HSL</label><span></span></fieldset></div><div id="clr-swatches" class="clr-swatches"></div><button type="button" id="clr-clear" class="clr-clear" aria-label="'+O.a11y.clear+'">'+O.clearLabel+'</button><div id="clr-color-preview" class="clr-preview"><button type="button" id="clr-close" class="clr-close" aria-label="'+O.a11y.close+'">'+O.closeLabel+'</button></div><span id="clr-open-label" hidden>'+O.a11y.open+'</span><span id="clr-swatch-label" hidden>'+O.a11y.swatch+"</span>",b.body.appendChild(g),m=f("clr-color-area"),k=f("clr-color-marker"),x=f("clr-clear"),C=f("clr-close"),L=f("clr-color-preview"),E=f("clr-color-value"),A=f("clr-hue-slider"),z=f("clr-hue-marker"),S=f("clr-alpha-slider"),T=f("clr-alpha-marker"),W(O.el),s(O.el),r(g,"mousedown",function(e){g.classList.remove("clr-keyboard-nav"),e.stopPropagation()}),r(m,"mousedown",function(e){r(b,"mousemove",t)}),r(m,"touchstart",function(e){b.addEventListener("touchmove",t,{passive:!1})}),r(k,"mousedown",function(e){r(b,"mousemove",t)}),r(k,"touchstart",function(e){b.addEventListener("touchmove",t,{passive:!1})}),r(E,"change",function(e){(B||O.inline)&&(u(E.value),d())}),r(x,"click",function(e){d(""),a()}),r(C,"click",function(e){d(),a()}),r(b,"click",".clr-format input",function(e){M=e.target.value,p(),d()}),r(g,"click",".clr-swatches button",function(e){u(e.target.textContent),d(),O.swatchesOnly&&a()}),r(b,"mouseup",function(e){b.removeEventListener("mousemove",t)}),r(b,"touchend",function(e){b.removeEventListener("touchmove",t)}),r(b,"mousedown",function(e){g.classList.remove("clr-keyboard-nav"),a()}),r(b,"keydown",function(e){"Escape"===e.key?a(!0):["Tab","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)&&g.classList.add("clr-keyboard-nav")}),r(b,"click",".clr-field button",function(e){D&&l(),e.target.nextElementSibling.dispatchEvent(new Event("click",{bubbles:!0}))}),r(k,"keydown",function(e){var t={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]};Object.keys(t).includes(e.key)&&(!function(e,t){U(+k.style.left.replace("px","")+e,+k.style.top.replace("px","")+t)}.apply(void 0,t[e.key]),e.preventDefault())}),r(m,"click",t),r(A,"input",e),r(S,"input",X))}function f(e){return b.getElementById(e)}function r(e,t,l,a){var r=Element.prototype.matches||Element.prototype.msMatchesSelector;"string"==typeof l?e.addEventListener(t,function(e){r.call(e.target,l)&&a.call(e.target,e)}):(a=l,e.addEventListener(t,a))}function $(e,t){t=void 0!==t?t:[],"loading"!==b.readyState?e.apply(void 0,t):b.addEventListener("DOMContentLoaded",function(){e.apply(void 0,t)})}var h,b,v,y,g,m,w,k,L,E,x,C,A,z,S,T,B,M,n,c,H,O,I,N,_,D,J}(),_coloris=Coloris.coloris,_init=Coloris.init,_set=Coloris.set,_wrap=Coloris.wrap,_close=Coloris.close;export default Coloris;export{_coloris as coloris,_close as close,_init as init,_set as set,_wrap as wrap};
+\ No newline at end of file
++return h=window,b=document,v=Math,c=b.createElement("canvas").getContext("2d"),O={el:"[data-coloris]",parent:"body",theme:"default",themeMode:"light",rtl:!(H={r:0,g:0,b:0,h:0,s:0,v:0,a:1}),wrap:!0,margin:2,format:"hex",formatToggle:!1,swatches:[],swatchesOnly:!1,alpha:!0,forceAlpha:!1,focusInput:!0,selectInput:!1,inline:!1,defaultColor:"#000000",clearButton:!1,clearLabel:"Clear",closeButton:!1,closeLabel:"Close",onChange:function(){},a11y:{open:"Open color picker",close:"Close color picker",clear:"Clear the selected color",marker:"Saturation: {s}. Brightness: {v}.",hueSlider:"Hue slider",alphaSlider:"Opacity slider",input:"Color value field",format:"Color format",swatch:"Color swatch",instruction:"Saturation and brightness selector. Use up, down, left and right arrow keys to select."}},I={},N="",D=!(_={}),void 0!==NodeList&&NodeList.prototype&&!NodeList.prototype.forEach&&(NodeList.prototype.forEach=Array.prototype.forEach),(J=function(){var r={init:G,set:o,wrap:s,close:a,setInstance:j,removeInstance:F,updatePosition:i};function e(e){$(function(){e&&("string"==typeof e?W:o)(e)})}for(var t in r)!function(a){e[a]=function(){for(var e=arguments.length,t=new Array(e),l=0;l<e;l++)t[l]=arguments[l];$(r[a],t)}}(t);return e}()).coloris=J;function o(n){if("object"==typeof n)for(var c in n)!function(){switch(c){case"el":W(n.el),!1!==n.wrap&&s(n.el);break;case"parent":(y=b.querySelector(n.parent))&&(y.appendChild(g),O.parent=n.parent,y===b.body)&&(y=null);break;case"themeMode":O.themeMode=n.themeMode,"auto"===n.themeMode&&h.matchMedia&&h.matchMedia("(prefers-color-scheme: dark)").matches&&(O.themeMode="dark");case"theme":n.theme&&(O.theme=n.theme),g.className="clr-picker clr-"+O.theme+" clr-"+O.themeMode,O.inline&&i();break;case"rtl":O.rtl=!!n.rtl,b.querySelectorAll(".clr-field").forEach(function(e){return e.classList.toggle("clr-rtl",O.rtl)});break;case"margin":n.margin*=1,O.margin=(isNaN(n.margin)?O:n).margin;break;case"wrap":n.el&&n.wrap&&s(n.el);break;case"formatToggle":O.formatToggle=!!n.formatToggle,f("clr-format").style.display=O.formatToggle?"block":"none",O.formatToggle&&(O.format="auto");break;case"swatches":var l;Array.isArray(n.swatches)&&(l=[],n.swatches.forEach(function(e,t){l.push('<button type="button" id="clr-swatch-'+t+'" aria-labelledby="clr-swatch-label clr-swatch-'+t+'" style="color: '+e+';">'+e+"</button>")}),f("clr-swatches").innerHTML=l.length?"<div>"+l.join("")+"</div>":"",O.swatches=n.swatches.slice());break;case"swatchesOnly":O.swatchesOnly=!!n.swatchesOnly,g.setAttribute("data-minimal",O.swatchesOnly);break;case"alpha":O.alpha=!!n.alpha,g.setAttribute("data-alpha",O.alpha);break;case"inline":O.inline=!!n.inline,g.setAttribute("data-inline",O.inline),O.inline&&(e=n.defaultColor||O.defaultColor,M=q(e),i(),u(e));break;case"clearButton":"object"==typeof n.clearButton&&(n.clearButton.label&&(O.clearLabel=n.clearButton.label,x.innerHTML=O.clearLabel),n.clearButton=n.clearButton.show),O.clearButton=!!n.clearButton,x.style.display=O.clearButton?"block":"none";break;case"clearLabel":O.clearLabel=n.clearLabel,x.innerHTML=O.clearLabel;break;case"closeButton":O.closeButton=!!n.closeButton,O.closeButton?g.insertBefore(C,L):L.appendChild(C);break;case"closeLabel":O.closeLabel=n.closeLabel,C.innerHTML=O.closeLabel;break;case"a11y":var e,t,a=n.a11y,r=!1;if("object"==typeof a)for(var o in a)a[o]&&O.a11y[o]&&(O.a11y[o]=a[o],r=!0);r&&(e=f("clr-open-label"),t=f("clr-swatch-label"),e.innerHTML=O.a11y.open,t.innerHTML=O.a11y.swatch,C.setAttribute("aria-label",O.a11y.close),x.setAttribute("aria-label",O.a11y.clear),A.setAttribute("aria-label",O.a11y.hueSlider),S.setAttribute("aria-label",O.a11y.alphaSlider),E.setAttribute("aria-label",O.a11y.input),m.setAttribute("aria-label",O.a11y.instruction));break;default:O[c]=n[c]}}()}function j(e,t){"string"==typeof e&&"object"==typeof t&&(I[e]=t,D=!0)}function F(e){delete I[e],0===Object.keys(I).length&&(D=!1,e===N)&&l()}function R(l){if(D){var a,r=["el","wrap","rtl","inline","defaultColor","a11y"];for(a in I)if("break"===function(){var t=I[a];if(l.matches(a)){for(var e in N=a,_={},r.forEach(function(e){return delete t[e]}),t)_[e]=Array.isArray(O[e])?O[e].slice():O[e];return o(t),"break"}}())break}}function l(){0<Object.keys(_).length&&(o(_),N="",_={})}function W(e){r(b,"click",e,function(e){O.inline||(R(e.target),B=e.target,n=B.value,M=q(n),g.classList.add("clr-open"),i(),u(n),(O.focusInput||O.selectInput)&&E.focus({preventScroll:!0}),O.selectInput&&E.select(),B.dispatchEvent(new Event("open",{bubbles:!0})))}),r(b,"input",e,function(e){var t=e.target.parentNode;t.classList.contains("clr-field")&&(t.style.color=e.target.value)})}function i(){var e,t,l,a,r=y,o=h.scrollY,n=g.offsetWidth,c=g.offsetHeight,i={left:!1,top:!1},s={x:0,y:0};r&&(t=h.getComputedStyle(r),e=parseFloat(t.marginTop),t=parseFloat(t.borderTopWidth),(s=r.getBoundingClientRect()).y+=t+o),O.inline||(l=(t=B.getBoundingClientRect()).x,a=o+t.y+t.height+O.margin,r?(l-=s.x,a-=s.y,l+n>r.clientWidth&&(l+=t.width-n,i.left=!0),a+c>r.clientHeight-e&&c+O.margin<=t.top-(s.y-o)&&(a-=t.height+c+2*O.margin,i.top=!0),a+=r.scrollTop):(l+n>b.documentElement.clientWidth&&(l+=t.width-n,i.left=!0),a+c-o>b.documentElement.clientHeight&&c+O.margin<=t.top&&(a=o+t.y-c-O.margin,i.top=!0)),g.classList.toggle("clr-left",i.left),g.classList.toggle("clr-top",i.top),g.style.left=l+"px",g.style.top=a+"px",s.x+=g.offsetLeft,s.y+=g.offsetTop),w={width:m.offsetWidth,height:m.offsetHeight,x:m.offsetLeft+s.x,y:m.offsetTop+s.y}}function s(e){b.querySelectorAll(e).forEach(function(e){var t,l,a=e.parentNode;a.classList.contains("clr-field")||(t=b.createElement("div"),l="clr-field",(O.rtl||e.classList.contains("clr-rtl"))&&(l+=" clr-rtl"),t.innerHTML='<button type="button" aria-labelledby="clr-open-label"></button>',a.insertBefore(t,e),t.setAttribute("class",l),t.style.color=e.value,t.appendChild(e))})}function a(e){var t;B&&!O.inline&&(t=B,e&&(B=null,n!==t.value)&&(t.value=n,t.dispatchEvent(new Event("input",{bubbles:!0}))),setTimeout(function(){n!==t.value&&t.dispatchEvent(new Event("change",{bubbles:!0}))}),g.classList.remove("clr-open"),D&&l(),t.dispatchEvent(new Event("close",{bubbles:!0})),O.focusInput&&t.focus({preventScroll:!0}),B=null)}function u(e){var e=function(e){var t;c.fillStyle="#000",c.fillStyle=e,(e=/^((rgba)|rgb)[\D]+([\d.]+)[\D]+([\d.]+)[\D]+([\d.]+)[\D]*?([\d.]+|$)/i.exec(c.fillStyle))?(t={r:+e[3],g:+e[4],b:+e[5],a:+e[6]}).a=+t.a.toFixed(2):(e=c.fillStyle.replace("#","").match(/.{2}/g).map(function(e){return parseInt(e,16)}),t={r:e[0],g:e[1],b:e[2],a:1});return t}(e),t=function(e){var t=e.r/255,l=e.g/255,a=e.b/255,r=v.max(t,l,a),o=v.min(t,l,a),o=r-o,n=r,c=0,i=0;o&&(r===t&&(c=(l-a)/o),r===l&&(c=2+(a-t)/o),r===a&&(c=4+(t-l)/o),r)&&(i=o/r);return{h:(c=v.floor(60*c))<0?c+360:c,s:v.round(100*i),v:v.round(100*n),a:e.a}}(e);P(t.s,t.v),p(e,t),A.value=t.h,g.style.color="hsl("+t.h+", 100%, 50%)",z.style.left=t.h/360*100+"%",k.style.left=w.width*t.s/100+"px",k.style.top=w.height-w.height*t.v/100+"px",S.value=100*t.a,T.style.left=100*t.a+"%"}function q(e){e=e.substring(0,3).toLowerCase();return"rgb"===e||"hsl"===e?e:"hex"}function d(e){e=void 0!==e?e:E.value,B&&(B.value=e,B.dispatchEvent(new Event("input",{bubbles:!0}))),O.onChange&&O.onChange.call(h,e),b.dispatchEvent(new CustomEvent("coloris:pick",{detail:{color:e}}))}function Y(e,t){var l,a,r,o,n,e={h:+A.value,s:e/w.width*100,v:100-t/w.height*100,a:S.value/100},c=(c=(t=e).s/100,l=t.v/100,c*=l,a=t.h/60,r=c*(1-v.abs(a%2-1)),c+=l-=c,r+=l,a=v.floor(a)%6,o=[c,r,l,l,r,c][a],n=[r,c,c,r,l,l][a],l=[l,l,r,c,c,r][a],{r:v.round(255*o),g:v.round(255*n),b:v.round(255*l),a:t.a});P(e.s,e.v),p(c,e),d()}function P(e,t){var l=O.a11y.marker;e=+e.toFixed(1),t=+t.toFixed(1),l=(l=l.replace("{s}",e)).replace("{v}",t),k.setAttribute("aria-label",l)}function t(e){var t={pageX:((t=e).changedTouches?t.changedTouches[0]:t).pageX,pageY:(t.changedTouches?t.changedTouches[0]:t).pageY},l=t.pageX-w.x,t=t.pageY-w.y;y&&(t+=y.scrollTop),U(l,t),e.preventDefault(),e.stopPropagation()}function U(e,t){e=e<0?0:e>w.width?w.width:e,t=t<0?0:t>w.height?w.height:t,k.style.left=e+"px",k.style.top=t+"px",Y(e,t),k.focus()}function p(e,t){void 0===t&&(t={});var l,a,r=O.format;for(l in e=void 0===e?{}:e)H[l]=e[l];for(a in t)H[a]=t[a];var o,n=function(e){var t=e.r.toString(16),l=e.g.toString(16),a=e.b.toString(16),r="";e.r<16&&(t="0"+t);e.g<16&&(l="0"+l);e.b<16&&(a="0"+a);O.alpha&&(e.a<1||O.forceAlpha)&&(e=255*e.a|0,r=e.toString(16),e<16)&&(r="0"+r);return"#"+t+l+a+r}(H),c=n.substring(0,7);switch(k.style.color=c,T.parentNode.style.color=c,T.style.color=n,L.style.color=n,m.style.display="none",m.offsetHeight,m.style.display="",T.nextElementSibling.style.display="none",T.nextElementSibling.offsetHeight,T.nextElementSibling.style.display="","mixed"===r?r=1===H.a?"hex":"rgb":"auto"===r&&(r=M),r){case"hex":E.value=n;break;case"rgb":E.value=(o=H,!O.alpha||1===o.a&&!O.forceAlpha?"rgb("+o.r+", "+o.g+", "+o.b+")":"rgba("+o.r+", "+o.g+", "+o.b+", "+o.a+")");break;case"hsl":E.value=(o=function(e){var t,l=e.v/100,a=l*(1-e.s/100/2);0<a&&a<1&&(t=v.round((l-a)/v.min(a,1-a)*100));return{h:e.h,s:t||0,l:v.round(100*a),a:e.a}}(H),!O.alpha||1===o.a&&!O.forceAlpha?"hsl("+o.h+", "+o.s+"%, "+o.l+"%)":"hsla("+o.h+", "+o.s+"%, "+o.l+"%, "+o.a+")")}b.querySelector('.clr-format [value="'+r+'"]').checked=!0}function e(){var e=+A.value,t=+k.style.left.replace("px",""),l=+k.style.top.replace("px","");g.style.color="hsl("+e+", 100%, 50%)",z.style.left=e/360*100+"%",Y(t,l)}function X(){var e=S.value/100;T.style.left=100*e+"%",p({a:e}),d()}function G(){b.getElementById("clr-picker")||(y=null,(g=b.createElement("div")).setAttribute("id","clr-picker"),g.className="clr-picker",g.innerHTML='<input id="clr-color-value" name="clr-color-value" class="clr-color" type="text" value="" spellcheck="false" aria-label="'+O.a11y.input+'"><div id="clr-color-area" class="clr-gradient" role="application" aria-label="'+O.a11y.instruction+'"><div id="clr-color-marker" class="clr-marker" tabindex="0"></div></div><div class="clr-hue"><input id="clr-hue-slider" name="clr-hue-slider" type="range" min="0" max="360" step="1" aria-label="'+O.a11y.hueSlider+'"><div id="clr-hue-marker"></div></div><div class="clr-alpha"><input id="clr-alpha-slider" name="clr-alpha-slider" type="range" min="0" max="100" step="1" aria-label="'+O.a11y.alphaSlider+'"><div id="clr-alpha-marker"></div><span></span></div><div id="clr-format" class="clr-format"><fieldset class="clr-segmented"><legend>'+O.a11y.format+'</legend><input id="clr-f1" type="radio" name="clr-format" value="hex"><label for="clr-f1">Hex</label><input id="clr-f2" type="radio" name="clr-format" value="rgb"><label for="clr-f2">RGB</label><input id="clr-f3" type="radio" name="clr-format" value="hsl"><label for="clr-f3">HSL</label><span></span></fieldset></div><div id="clr-swatches" class="clr-swatches"></div><button type="button" id="clr-clear" class="clr-clear" aria-label="'+O.a11y.clear+'">'+O.clearLabel+'</button><div id="clr-color-preview" class="clr-preview"><button type="button" id="clr-close" class="clr-close" aria-label="'+O.a11y.close+'">'+O.closeLabel+'</button></div><span id="clr-open-label" hidden>'+O.a11y.open+'</span><span id="clr-swatch-label" hidden>'+O.a11y.swatch+"</span>",b.body.appendChild(g),m=f("clr-color-area"),k=f("clr-color-marker"),x=f("clr-clear"),C=f("clr-close"),L=f("clr-color-preview"),E=f("clr-color-value"),A=f("clr-hue-slider"),z=f("clr-hue-marker"),S=f("clr-alpha-slider"),T=f("clr-alpha-marker"),W(O.el),s(O.el),r(g,"mousedown",function(e){g.classList.remove("clr-keyboard-nav"),e.stopPropagation()}),r(m,"mousedown",function(e){r(b,"mousemove",t)}),r(m,"touchstart",function(e){b.addEventListener("touchmove",t,{passive:!1})}),r(k,"mousedown",function(e){r(b,"mousemove",t)}),r(k,"touchstart",function(e){b.addEventListener("touchmove",t,{passive:!1})}),r(E,"change",function(e){(B||O.inline)&&(u(E.value),d())}),r(x,"click",function(e){d(""),a()}),r(C,"click",function(e){d(),a()}),r(b,"click",".clr-format input",function(e){M=e.target.value,p(),d()}),r(g,"click",".clr-swatches button",function(e){u(e.target.textContent),d(),O.swatchesOnly&&a()}),r(b,"mouseup",function(e){b.removeEventListener("mousemove",t)}),r(b,"touchend",function(e){b.removeEventListener("touchmove",t)}),r(b,"mousedown",function(e){g.classList.remove("clr-keyboard-nav"),a()}),r(b,"keydown",function(e){"Escape"===e.key?a(!0):["Tab","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)&&g.classList.add("clr-keyboard-nav")}),r(b,"click",".clr-field button",function(e){D&&l(),e.target.nextElementSibling.dispatchEvent(new Event("click",{bubbles:!0}))}),r(k,"keydown",function(e){var t={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]};Object.keys(t).includes(e.key)&&(!function(e,t){U(+k.style.left.replace("px","")+e,+k.style.top.replace("px","")+t)}.apply(void 0,t[e.key]),e.preventDefault())}),r(m,"click",t),r(A,"input",e),r(S,"input",X))}function f(e){return b.getElementById(e)}function r(e,t,l,a){var r=Element.prototype.matches||Element.prototype.msMatchesSelector;"string"==typeof l?e.addEventListener(t,function(e){r.call(e.target,l)&&a.call(e.target,e)}):(a=l,e.addEventListener(t,a))}function $(e,t){t=void 0!==t?t:[],"loading"!==b.readyState?e.apply(void 0,t):b.addEventListener("DOMContentLoaded",function(){e.apply(void 0,t)})}var h,b,v,y,g,m,w,k,L,E,x,C,A,z,S,T,B,M,n,c,H,O,I,N,_,D,J}(),_coloris=Coloris.coloris,_init=Coloris.init,_set=Coloris.set,_wrap=Coloris.wrap,_close=Coloris.close,_setInstance=Coloris.setInstance,_removeInstance=Coloris.removeInstance,_updatePosition=Coloris.updatePosition;export default Coloris;export{_coloris as coloris,_close as close,_init as init,_set as set,_wrap as wrap,_setInstance as setInstance,_removeInstance as removeInstance,_updatePosition as updatePosition};
+\ No newline at end of file
+diff --git a/package.json b/package.json
+index 8a320b75c12a0a17bf1aa5e4c961c198ef4f2fac..53132dd68231088135d13186d21d2df102740653 100644
+--- a/package.json
++++ b/package.json
+@@ -13,7 +13,8 @@
+   "exports": {
+     ".": {
+       "import": "./dist/esm/coloris.js",
+-      "require": "./dist/umd/coloris.js"
++      "require": "./dist/umd/coloris.js",
++      "types": "./dist/coloris.d.ts"
+     },
+     "./dist/coloris.css": {
+       "import": "./dist/coloris.css",

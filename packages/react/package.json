@@ -1,0 +1,43 @@
+{
+  "name": "@melloware/coloris-react",
+  "version": "0.1.0",
+  "description": "React wrapper for coloris",
+  "repository": "https://github.com/melloware/coloris-react",
+  "author": "Andre Wachsmuth",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "yarn@3.5.0",
+  "exports": {
+    ".": {
+      "import": "./dist/bundle/index.js",
+      "types": "./dist/src/index.d.ts"
+    },
+    "./coloris.css": "./dist/bundle/coloris.css"
+  },
+  "files": [
+    "dist/src"
+  ],
+  "devDependencies": {
+    "@types/node": "^18.15.10",
+    "@types/react": ">=18.0.0",
+    "esbuild": "^0.17.13",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "@types/react": ">=18.0.0",
+    "react": ">=18.0.0"
+  },
+  "dependencies": {
+    "@melloware/coloris": "patch:@melloware/coloris@npm%3A0.18.0#~/.yarn/patches/@melloware-coloris-npm-0.18.0-1e5f08e615.patch"
+  },
+  "scripts": {
+    "build-impl": "node scripts/copy-css.js && esbuild ./src/index.ts ./src/*.tsx --platform=node --packages=external --outdir=dist/bundle",
+    "build-types": "tsc --emitDeclarationOnly",
+    "build": "run build-impl && run build-types",
+    "clean": "node scripts/clean.js",
+    "verify": "tsc --noEmit",
+    "prepack": "run build",
+    "postpack": "run clean",
+    "prepublish": "run verify"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "private": true,
+  "name": "@melloware/coloris-react-parent",
+  "version": "0.1.0",
+  "description": "React wrapper for coloris",
+  "repository": "https://github.com/melloware/coloris-react",
+  "author": "Andre Wachsmuth",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "yarn@4.0.0-rc.40",
+  "files": [],
+  "workspaces": [
+    "packages/demo",
+    "packages/react"
+  ],
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "scripts": {
+    "build-impl": "yarn workspaces foreach --topological run build-impl",
+    "build-types": "yarn workspaces foreach --topological run build-types",
+    "build": "yarn workspaces foreach --topological run build",
+    "clean": "yarn workspaces foreach --parallel run clean"
+  }
+}

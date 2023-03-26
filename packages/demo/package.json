@@ -1,0 +1,21 @@
+{
+    "private": true,
+    "name": "@melloware/coloris-react-demo",
+    "type": "module",
+    "dependencies": {
+        "@melloware/coloris-react": "workspace:*",
+        "react": "^18.0.0",
+        "react-dom": "^18.0.0"
+    },
+    "devDependencies": {
+        "@types/react": "^18.0.0",
+        "@types/react-dom": "^18.0.0",
+        "esbuild": "^0.17.13",
+        "typescript": "^5.0.0"
+    },
+    "scripts": {
+        "build-impl": "esbuild src/index.ts --bundle --outfile=dist/index.js",
+        "build": "run build-impl",
+        "clean": "node scripts/clean.js"
+    }
+}
