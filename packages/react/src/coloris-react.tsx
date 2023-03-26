@@ -10,7 +10,6 @@ import {
 } from "@melloware/coloris";
 
 import {
-    useDeferredValue,
     useEffect,
     useId,
     useRef,
@@ -41,15 +40,38 @@ type LocalPassthroughProps =
 
 export type Coloris = (props: ColorisProps) => JSX.Element;
 
+/**
+ * Value of the color picker. Either `undefined` when no color is selected, or
+ * a string with a CSS color value.
+ */
 export type ColorisValue = string | undefined;
 
 export interface ColorisSettings extends Pick<ColorisOptions, GlobalPassthroughProps> {
 }
 
 export interface ColorisProps extends Pick<ColorisVirtualInstanceOptions, LocalPassthroughProps> {
-    onOpen?: () => void;
+    /**
+     * The color picker is closed and the selected color has changed
+     * @param value  The newly selected value.
+     */
     onChange?: (value: ColorisValue) => void;
+    /**
+     * The color picker is opened.
+     */
+    onOpen?: () => void;
+    /**
+     * A new color is selected. This event may occur even when the color picker
+     * is still open.
+     * @param value  The newly selected value.
+     */
+    onInput?: (value: ColorisValue) => void;
+    /**
+     * The color picker is closed.
+     */
     onClose?: () => void;
+    /**
+     * The currently selected color.
+     */
     value?: ColorisValue;
 }
 
@@ -118,8 +140,9 @@ export function createColoris(settings?: ColorisSettings): Coloris {
 
         // Events
         useEffect(() => {
-            console.log("apply event close");
+            console.log("event close");
             if (props.onClose !== undefined) {
+                console.log("event close add listener");
                 const close = () => props.onClose?.();
                 ref.current?.addEventListener("close", close);
                 return () => ref.current?.removeEventListener("close", close);
@@ -130,8 +153,9 @@ export function createColoris(settings?: ColorisSettings): Coloris {
         }, [props.onClose]);
 
         useEffect(() => {
-            console.log("apply event open");
+            console.log("event open");
             if (props.onOpen !== undefined) {
+                console.log("event open add listener");
                 const open = () => props.onOpen?.();
                 ref.current?.addEventListener("open", open);
                 return () => ref.current?.removeEventListener("open", open);
@@ -142,11 +166,25 @@ export function createColoris(settings?: ColorisSettings): Coloris {
         }, [props.onOpen]);
 
         useEffect(() => {
-            console.log("apply event change")
+            console.log("event input")
+            if (props.onInput !== undefined) {
+                console.log("event input add listener")
+                const input = () => props.onInput?.(ref.current?.value);
+                ref.current?.addEventListener("input", input);
+                return () => ref.current?.removeEventListener("input", input);
+            }
+            else {
+                return undefined;
+            }
+        }, [props.onInput]);
+
+        useEffect(() => {
+            console.log("event change")
             if (props.onChange !== undefined) {
-                const pick = (event: CustomEvent<{ color: string | undefined }>) => props.onChange?.(event.detail.color);
-                ref.current?.addEventListener("coloris:pick", pick);
-                return () => ref.current?.removeEventListener("coloris:pick", pick);
+                console.log("event change add listener")
+                const change = () => props.onChange?.(ref.current?.value);
+                ref.current?.addEventListener("change", change);
+                return () => ref.current?.removeEventListener("change", change);
             }
             else {
                 return undefined;
